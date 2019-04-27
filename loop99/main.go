@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"time"
 )
 
@@ -11,8 +13,21 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	canceled := false
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	go func() {
+		<-sc
+		cancel()
+		canceled = true
+	}()
+
 	for i := range Count(ctx, 1, 99) {
 		fmt.Println(i)
+	}
+
+	if canceled {
+		fmt.Fprintln(os.Stderr, "canceled")
 	}
 }
 
